@@ -3,7 +3,7 @@ import numpy as np
 # 4 bytes per integer in data files, 1 byte per pixel and per label
 bytesInt = 4
 
-#Function that reads images from input file
+#Method that reads images from input file
 def readImages(fileName):
     with open(fileName, mode='rb') as f:  # open the file in binary mode
         f.seek(bytesInt)  # skip magic number
@@ -20,7 +20,7 @@ def readImages(fileName):
 
         return images, imgNum, rows, cols
 
-#Function that reads labels from input file
+#Method that reads labels from input file
 def readLabels(fileName):
     with open(fileName, mode='rb') as f:  # open the file in binary mode
         f.seek(bytesInt)  # skip magic number
@@ -30,3 +30,4 @@ def readLabels(fileName):
         labels = np.fromfile(f,np.uint8)
 
         return labels, lblNum
+
