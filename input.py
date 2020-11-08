@@ -1,4 +1,24 @@
 import numpy as np
+import sys
+
+# read user input
+def readArgs():
+    if len(sys.argv) == 1:
+        fileName = input('Enter dataset path: ')
+    elif len(sys.argv) == 3 and sys.argv[1] == '-d':
+        fileName = sys.argv[2]
+    else:
+        raise Exception('Error, check command line arguments')
+
+    # hyperparameters
+    filtersNum = int(input('Enter number of filters: '))
+    filterSize = int(input('Enter size of each filter: '))
+    convNum = int(input('Enter number of convolution layers: '))
+    epochs = int(input('Enter number of epochs: '))
+    batchSize = int(input('Enter batch size: '))
+
+    return fileName, filtersNum, filterSize, convNum, epochs, batchSize
+
 
 # 4 bytes per integer in data files, 1 byte per pixel and per label
 bytesInt = 4
@@ -16,7 +36,7 @@ def readImages(fileName):
         # read all pixels at once
         images = np.fromfile(f,np.uint8)
         # 3-d array of images, 2-d array of size (rows x cols) per image
-        images = images.reshape([imgNum, rows, cols])
+        images = np.reshape(images.astype('float32'), (imgNum, rows, cols, 1))
 
         return images, imgNum, rows, cols
 
