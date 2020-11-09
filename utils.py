@@ -6,10 +6,11 @@ plt.style.use('ggplot')
 def plotLoss(losses):
     #Plotting the validation and training errors
     x_axis = range(len(losses['loss']))
-    plt.plot(x_axis, losses['val_loss'], label='val', linestyle='--')
-    plt.plot(x_axis, losses['loss'], label='train')
+    plt.plot(x_axis, losses['val_loss'], label='Validation loss', linestyle='--')
+    plt.plot(x_axis, losses['loss'], label='Training loss')
     plt.xlabel('Epochs')
     plt.ylabel('Mean Squared Error')
+    plt.title('Training and validation loss')
     plt.legend()
     plt.show()
 

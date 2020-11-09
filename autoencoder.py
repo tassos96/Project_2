@@ -1,4 +1,4 @@
-import keras
+from tensorflow import keras
 from keras import Model
 from keras.optimizers import Adam, RMSprop
 from keras.layers import Conv2D, Conv2DTranspose, BatchNormalization, UpSampling2D, MaxPooling2D
@@ -12,7 +12,7 @@ def encoder(inputs, filtersNum, filterSize, convNum):
     # input is of size 28 x 28 x 1, i.e. gray scale
     for i in range(2):  # sequence of convolutions that extract features from increasing image subsets
         for y in range(convNum): # add convolution layers before pooling
-            neuralNet = Conv2D(filtersNum*(y+1),
+            neuralNet = Conv2D(filtersNum*(2**(y+i*convNum)),
                             (filterSize,filterSize),
                             activation= 'relu',
                             padding= 'same')(inputs if i == 0 and y == 0
@@ -29,7 +29,7 @@ def encoder(inputs, filtersNum, filterSize, convNum):
 def decoder(neuralNet, filtersNum, filterSize, deconvNum):
     for i in range(2):  # 2 upsampling layers since we have 2 pooling layers in encoder
         for y in range(deconvNum, 0, -1): # add deconvolution layers before upsampling
-            neuralNet = Conv2D(filtersNum*y,
+            neuralNet = Conv2D(filtersNum*(2**(y-1+(1-i)*deconvNum)),
                                         (filterSize,filterSize),
                                         activation= 'relu',
                                         padding= 'same')(neuralNet)
@@ -64,23 +64,24 @@ if __name__ == '__main__':
 
         # build model
         autoencoder = Model(input_img, convNN)
-        autoencoder.compile(loss='mean_squared_error', optimizer='adam')
+        autoencoder.compile(loss='mean_squared_error', optimizer=RMSprop())
         autoencoder.summary()
 
         # split into train set and validation set
         # the labels are the input images since we are training an autoencoder
-        train, val, _, _ = train_test_split(images, images, test_size=0.2, random_state=42)
+        train, val, train_grnd, val_grnd = train_test_split(images, images, test_size=0.2, random_state=42)
 
         # training, training error and validation error returned for plotting
-        errors = autoencoder.fit(train, train, batch_size=batchSize, epochs=epochs, validation_data=(val, val))
+        errors = autoencoder.fit(train, train_grnd, batch_size=batchSize,
+                                epochs=epochs, validation_data=(val, val_grnd))
 
         # ask user for the next action
         doNext = nextAction()
         if doNext == 2: # plot losses
             plotLoss(errors.history)
-            if input('do you want to save the weights? [y|n]') == 'y':
-                print(autoencoder.get_weights())
+            if input('do you want to save the weights? [y|*]') == 'y':
+                autoencoder.save_weights(input('path: '))
             break
         elif doNext == 3: # save weights of encoder
-            print(autoencoder.get_weights())
+            autoencoder.save_weights(input('path: '))
             break
