@@ -4,75 +4,83 @@ from keras.optimizers import Adam, RMSprop
 from keras.layers import Conv2D, Conv2DTranspose, BatchNormalization, UpSampling2D, MaxPooling2D
 from keras.utils import normalize
 from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
 
+from utils import plotLoss, nextAction
 from input import readImages,readArgs
 
-plt.style.use('ggplot')
-
 def encoder(inputs, filtersNum, filterSize, convNum):
-    for i in range(2):  # 2 pooling layers
+    # input is of size 28 x 28 x 1, i.e. gray scale
+    for i in range(2):  # sequence of convolutions that extract features from increasing image subsets
         for y in range(convNum): # add convolution layers before pooling
             neuralNet = Conv2D(filtersNum*(y+1),
                             (filterSize,filterSize),
                             activation= 'relu',
                             padding= 'same')(inputs if i == 0 and y == 0
                                                     else neuralNet)
+
             neuralNet = BatchNormalization()(neuralNet) # scaling layer
 
-        neuralNet = MaxPooling2D((2,2), padding='same')(neuralNet)
+        # pool to reduce number of parameters and keep important learned features
+        neuralNet = MaxPooling2D((2,2), padding='valid')(neuralNet)
 
     return neuralNet
 
 # 'mirrored' decoding sequence of layers
 def decoder(neuralNet, filtersNum, filterSize, deconvNum):
-    for i in range(2):  # 2 upsampling layers
-        for y in range(deconvNum, 0, -1): # add deconvolution layers after upsampling
+    for i in range(2):  # 2 upsampling layers since we have 2 pooling layers in encoder
+        for y in range(deconvNum, 0, -1): # add deconvolution layers before upsampling
             neuralNet = Conv2D(filtersNum*y,
                                         (filterSize,filterSize),
                                         activation= 'relu',
-                                        padding= 'same' if i == 1 and y == 1
-                                                         else 'same')(neuralNet)
+                                        padding= 'same')(neuralNet)
+
             neuralNet = BatchNormalization()(neuralNet) # scaling layer
 
-        neuralNet = UpSampling2D((2,2))(neuralNet)
+        neuralNet = UpSampling2D((2,2))(neuralNet) # get back to initial dimensions
 
     neuralNet = Conv2D(1,
                         (filterSize,filterSize),
-                        activation= 'linear',
-                        padding= 'same')(neuralNet) # add an output layer
+                        activation= 'sigmoid',
+                        padding= 'same')(neuralNet) # 28 x 28 x 1 result, same size as input
     return neuralNet
 
 
 if __name__ == '__main__':
-    fileName, filtersNum, filterSize, convNum, epochs, batchSize = readArgs()
+    while True:
+        fileName, filtersNum, filterSize, convNum, epochs, batchSize = readArgs()
 
-    # read file with instances
-    images, _, rows, cols = readImages(fileName)
+        # read file with instances
+        images, _, rows, cols = readImages(fileName)
 
-    # scaling
-    images = normalize(images, axis= 1)
+        # scaling
+        images = normalize(images, axis= 1)
 
-    input_img = keras.Input(shape=(rows, cols, 1))
-    autoencoder = Model(input_img, decoder(encoder(input_img, filtersNum, filterSize, convNum),
-                                        filtersNum,
-                                        filterSize,
-                                        convNum)
-                        )
-    autoencoder.compile(loss='mean_squared_error', optimizer='adam')
-    autoencoder.summary()
-    # the labels are the input images since we are training an autoencoder
-    train, val, _, _ = train_test_split(images, images, test_size=0.2, random_state=42)
+        # 28 x 28 x 1 array per image
+        input_img = keras.Input(shape=(rows, cols, 1))
 
-    errors = autoencoder.fit(train, train, batch_size=batchSize, epochs=epochs, validation_data=(val, val))
-    print(errors.history)
+        # define structure of neural net
+        convNN = decoder(encoder(input_img, filtersNum, filterSize, convNum),
+                        filtersNum, filterSize, convNum)
 
-    #Plotting the validation and training errors
-    x_axis = range(len(errors.history['loss']))
-    plt.plot(x_axis, errors.history['val_loss'], label='val', linestyle='--')
-    plt.plot(x_axis, errors.history['loss'], label='train')
-    plt.xlabel('Epochs')
-    plt.ylabel('Mean Squared Error')
-    plt.legend()
-    plt.show()
+        # build model
+        autoencoder = Model(input_img, convNN)
+        autoencoder.compile(loss='mean_squared_error', optimizer='adam')
+        autoencoder.summary()
 
+        # split into train set and validation set
+        # the labels are the input images since we are training an autoencoder
+        train, val, _, _ = train_test_split(images, images, test_size=0.2, random_state=42)
+
+        # training, training error and validation error returned for plotting
+        errors = autoencoder.fit(train, train, batch_size=batchSize, epochs=epochs, validation_data=(val, val))
+
+        # ask user for the next action
+        doNext = nextAction()
+        if doNext == 2: # plot losses
+            plotLoss(errors.history)
+            if input('do you want to save the weights? [y|n]') == 'y':
+                print(autoencoder.get_weights())
+            break
+        elif doNext == 3: # save weights of encoder
+            print(autoencoder.get_weights())
+            break

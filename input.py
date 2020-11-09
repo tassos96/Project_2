@@ -35,7 +35,7 @@ def readImages(fileName):
 
         # read all pixels at once
         images = np.fromfile(f,np.uint8)
-        # 3-d array of images, 2-d array of size (rows x cols) per image
+        # 4-d array of images, 3-d array of size (28 x 28 x 1) per gray-scale image , i.e. one channel
         images = np.reshape(images.astype('float32'), (imgNum, rows, cols, 1))
 
         return images, imgNum, rows, cols
