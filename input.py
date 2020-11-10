@@ -1,6 +1,18 @@
 import numpy as np
 import sys
 
+def readVal(limit, mssg):
+    while True:
+        try:
+            val = int(input(mssg))
+            if val < limit:
+                raise Exception
+            break
+        except:
+            print('Input error!')
+
+    return val
+
 # read user input
 def readArgs():
     if len(sys.argv) == 1:
@@ -11,11 +23,10 @@ def readArgs():
         raise Exception('Error, check command line arguments')
 
     # hyperparameters
-    # filtersNum = int(input('Enter number of filters: '))
-    # filterSize = int(input('Enter size of each filter: '))
-    convNum = int(input('Enter number of convolution layers: '))
-    epochs = int(input('Enter number of epochs: '))
-    batchSize = int(input('Enter batch size: '))
+    convNum = readVal(2, 'Number of convolution layers: ')
+    epochs = readVal(1, 'Epochs: ')
+    batchSize = readVal(1, 'Batch size: ')
+
 
     return fileName, convNum, epochs, batchSize
 
