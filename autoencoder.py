@@ -1,53 +1,64 @@
+import tensorflow as tf
 from tensorflow import keras
 from keras import Model
+from keras.layers import Conv2D
 from keras.optimizers import Adam, RMSprop
-from keras.layers import Conv2D, Conv2DTranspose, BatchNormalization, UpSampling2D, MaxPooling2D
 from keras.utils import normalize
 from sklearn.model_selection import train_test_split
+from collections import deque
 
-from utils import plotLoss, nextAction
+from utils import plotLoss, nextAction, nextLayer, addLayer
 from input import readImages,readArgs
 
-def encoder(inputs, filtersNum, filterSize, convNum):
+# gpu fix
+# physical_devices = tf.config.experimental.list_physical_devices('GPU')
+# assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
+# config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
+
+def encoder(input, convLayers):
     # input is of size 28 x 28 x 1, i.e. gray scale
-    for i in range(2):  # sequence of convolutions that extract features from increasing image subsets
-        for y in range(convNum): # add convolution layers before pooling
-            neuralNet = Conv2D(filtersNum*(2**(y+i*convNum)),
-                            (filterSize,filterSize),
-                            activation= 'relu',
-                            padding= 'same')(inputs if i == 0 and y == 0
-                                                    else neuralNet)
+    poolingLayers = 2
+    firstLayer = True
+    # queue        stack
+    decoderLayers, decoderConvParams = deque(), deque() # decoder mirrors encoder
 
-            neuralNet = BatchNormalization()(neuralNet) # scaling layer
+    while convLayers > 0 or poolingLayers > 0: # keep count of remaining layers to be added
+        # get next layer info from user
+        layer_params, convLayers, poolingLayers = nextLayer(convLayers, poolingLayers)
+        # create the specified layer
+        NN= addLayer(layer_params, input if firstLayer else NN)
 
-        # pool to reduce number of parameters and keep important learned features
-        neuralNet = MaxPooling2D((2,2), padding='valid')(neuralNet)
+        # save info for decoding
+        decoderLayers.append(layer_params['type'])
+        if layer_params['type'] == 'conv': # decoder will have same filter amount and size, so keep this info
+            decoderConvParams.append({'filter_num':layer_params['filter_num'],'filter_size':layer_params['filter_size']})
 
-    return neuralNet
+        if firstLayer:
+            firstLayer = False
+
+    return NN, decoderLayers, decoderConvParams
 
 # 'mirrored' decoding sequence of layers
-def decoder(neuralNet, filtersNum, filterSize, deconvNum):
-    for i in range(2):  # 2 upsampling layers since we have 2 pooling layers in encoder
-        for y in range(deconvNum, 0, -1): # add deconvolution layers before upsampling
-            neuralNet = Conv2D(filtersNum*(2**(y-1+(1-i)*deconvNum)),
-                                        (filterSize,filterSize),
-                                        activation= 'relu',
-                                        padding= 'same')(neuralNet)
+def decoder(NN, layer_types, convParams):
+    while len(layer_types) > 0:
+        # get next layer type based on encoder's layer
+        nextLyr = layer_types.popleft() # layer sequence is same as encoder
+        # encoder has convolution layer, add deconvolution layer
+        if nextLyr == 'conv':
+            params = convParams.pop() # filter params are inverse with respect to encoder
+            params['type'] = 'conv'
+            NN= addLayer(params, NN)
+        # encoder has pooling layer, add upsampling layer
+        else:
+            NN= addLayer({'type':'upsample'}, NN)
 
-            neuralNet = BatchNormalization()(neuralNet) # scaling layer
-
-        neuralNet = UpSampling2D((2,2))(neuralNet) # get back to initial dimensions
-
-    neuralNet = Conv2D(1,
-                        (filterSize,filterSize),
-                        activation= 'sigmoid',
-                        padding= 'same')(neuralNet) # 28 x 28 x 1 result, same size as input
-    return neuralNet
+    return Conv2D(1, (3,3), activation= 'sigmoid', padding= 'same')(NN) # final output layer
 
 
 if __name__ == '__main__':
     while True:
-        fileName, filtersNum, filterSize, convNum, epochs, batchSize = readArgs()
+        fileName, convNum, epochs, batchSize = readArgs()
 
         # read file with instances
         images, _, rows, cols = readImages(fileName)
@@ -59,11 +70,11 @@ if __name__ == '__main__':
         input_img = keras.Input(shape=(rows, cols, 1))
 
         # define structure of neural net
-        convNN = decoder(encoder(input_img, filtersNum, filterSize, convNum),
-                        filtersNum, filterSize, convNum)
+        NN, layer_types, convParams = encoder(input_img, convNum)
+        NN = decoder(NN, layer_types, convParams)
 
         # build model
-        autoencoder = Model(input_img, convNN)
+        autoencoder = Model(input_img, NN)
         autoencoder.compile(loss='mean_squared_error', optimizer=RMSprop())
         autoencoder.summary()
 
@@ -79,9 +90,10 @@ if __name__ == '__main__':
         doNext = nextAction()
         if doNext == 2: # plot losses
             plotLoss(errors.history)
-            if input('do you want to save the weights? [y|*]') == 'y':
-                autoencoder.save_weights(input('path: '))
+            if input('do you want to save the weights? [y|*]: ') == 'y':
+                autoencoder.save_weights(input('Enter path: '))
             break
         elif doNext == 3: # save weights of encoder
-            autoencoder.save_weights(input('path: '))
+            autoencoder.save_weights(input('Enter path: '))
             break
+

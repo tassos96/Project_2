@@ -11,13 +11,13 @@ def readArgs():
         raise Exception('Error, check command line arguments')
 
     # hyperparameters
-    filtersNum = int(input('Enter number of filters: '))
-    filterSize = int(input('Enter size of each filter: '))
+    # filtersNum = int(input('Enter number of filters: '))
+    # filterSize = int(input('Enter size of each filter: '))
     convNum = int(input('Enter number of convolution layers: '))
     epochs = int(input('Enter number of epochs: '))
     batchSize = int(input('Enter batch size: '))
 
-    return fileName, filtersNum, filterSize, convNum, epochs, batchSize
+    return fileName, convNum, epochs, batchSize
 
 
 # 4 bytes per integer in data files, 1 byte per pixel and per label
