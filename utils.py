@@ -1,7 +1,11 @@
 from tensorflow import keras
 from keras.layers import Conv2D, BatchNormalization, UpSampling2D, MaxPooling2D
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from input import readVal
+
+import seaborn as sns
 
 # fancy graphics
 plt.style.use('seaborn')
@@ -56,23 +60,65 @@ def plotLoss(losses):
     plt.plot(x_axis, losses['val_loss'], label='Validation loss', linestyle='-.', c='brown', linewidth=2)
     plt.xlabel('Epochs')
     plt.ylabel('Mean Squared Error')
-    # plt.xticks(x_axis)
     plt.title('Training and validation loss')
     plt.legend()
     plt.show()
 
 def nextAction():
     prompt = """
-Enter one of 1, 2, 3, 4, 5:
+Enter one of 1, 2, 3, 4, 5, 6:
 \t1) repeat process
 \t2) plot training and validation loss over epochs
-\t3) save encoder weights
-\t4) save model and losses
-\t5) exit
+\t3) plot hyperparameters over losses until now
+\t4) save autoencoder weights
+\t5) save model and losses
+\t6) exit
 """
     action = input(prompt)
-    while action not in {'1','2','3','4','5'}:
+    while action not in {'1','2','3','4','5','6'}:
         action = input("Wrong input, enter again: ")
 
     return int(action)
+
+
+# save hyperparameters and losses for plotting
+def saveInfo(convLayersNum, batchSize, epochs, train_loss, val_loss, saveInto):
+    sv = \
+    {
+        'cnv': convLayersNum,
+        'btchSz': batchSize,
+        'ep': epochs,
+        'tr_l': train_loss,
+        'val_l': val_loss
+    }
+    saveInto.append(sv)
+
+def plotAll(saves):
+    idx = np.arange(len(saves))
+
+    convNums, batchSizes, epochs, train_l, val_l = [],[],[],[],[]
+    for save in saves:
+        convNums.append(save['cnv'])
+        batchSizes.append(save['btchSz'])
+        epochs.append(save['ep'])
+        train_l.append(save['tr_l'])
+        val_l.append(save['val_l'])
+
+
+    fig, axes = plt.subplots(1, 2, figsize=(15, 5), sharey=True)
+    fig.suptitle('Training and Validation loss(MSE) over hyperparameters')
+
+    df=pd.DataFrame({'Convolution layers': convNums, 'Epochs': epochs, 'tr_l': train_l, 'val_l': val_l })
+
+    df_tr=df.pivot_table( index='Convolution layers', columns='Epochs', values='tr_l' )
+    df_val = df.pivot_table( index='Convolution layers', columns='Epochs', values='val_l' )
+
+    sns.heatmap(df_tr, ax=axes[0])
+    axes[0].set_title('Training Loss')
+
+    sns.heatmap(df_val, ax=axes[1])
+    axes[1].set_title('Validation Loss')
+
+    plt.show()
+
 

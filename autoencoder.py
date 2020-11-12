@@ -8,13 +8,13 @@ from keras.utils import normalize
 from sklearn.model_selection import train_test_split
 from collections import deque
 
-from utils import plotLoss, nextAction, nextLayer, addLayer
+from utils import plotLoss, nextAction, nextLayer, addLayer, saveInfo, plotAll
 from input import readImages,readArgs
 
 # gpu fix
-physical_devices = tf.config.experimental.list_physical_devices('GPU')
-assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
-config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
+# physical_devices = tf.config.experimental.list_physical_devices('GPU')
+# assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
+# config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 
 def encoder(input, convLayers): # input is of size 28 x 28 x 1, i.e. gray scale
@@ -59,6 +59,13 @@ def decoder(NN, encdr_layers):
 
 
 if __name__ == '__main__':
+    save = [] # for every iteration keep hyperparameters and losses for plotting
+    # 'save' list contains dicts with following attributes:
+    # convolution layers
+    # batch size
+    # epochs
+    # training loss & validation loss
+
     while True:
         fileName, convNum, epochs, batchSize = readArgs()
 
@@ -89,19 +96,24 @@ if __name__ == '__main__':
         errors = autoencoder.fit(train, train_grnd, batch_size=batchSize,
                                 epochs=epochs, validation_data=(val, val_grnd))
 
+        # for plotting
+        saveInfo(convNum, batchSize, epochs, errors.history['loss'][-1], errors.history['val_loss'][-1], save)
+
         # ask user for the next action
         while True:
             doNext = nextAction()
-            if doNext == 1 or doNext == 5: # repeat experiment or exit
+            if doNext == 1 or doNext == 6: # repeat experiment or exit
                 break
             elif doNext == 2: # plot losses
                 plotLoss(errors.history)
-            elif doNext == 3: # save weights of encoder
+            elif doNext == 3: # plot hyperparams
+                plotAll(save)
+            elif doNext == 4: # save weights of autoencoder
                 autoencoder.save_weights(input('Enter path: '))
-            elif doNext == 4: # save model and losses for research purposes
+            elif doNext == 5: # save model and losses for research purposes
                 models.save_model(autoencoder,input('Enter model path: '))
                 np.save(input('Enter training history path: '),errors.history)
 
-        if doNext == 5: # exit
+        if doNext == 6: # exit
             break
 
