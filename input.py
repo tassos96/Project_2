@@ -14,7 +14,13 @@ def readVal(limit, mssg):
     return val
 
 # read user input
-def readArgs():
+def getNNParams():
+    # other hyperparameters like like kernel info are read dynamically
+    convNum = readVal(2, 'Number of convolution layers: ')
+
+    return convNum
+
+def getImgFileName():
     if len(sys.argv) == 1:
         fileName = input('Enter dataset path: ')
     elif len(sys.argv) == 3 and sys.argv[1] == '-d':
@@ -22,14 +28,13 @@ def readArgs():
     else:
         raise Exception('Error, check command line arguments')
 
-    # hyperparameters
-    convNum = readVal(2, 'Number of convolution layers: ')
-    epochs = readVal(1, 'Epochs: ')
+    return fileName
+
+def getTrainParams():
+    epochs = readVal(1, 'Epochs to iterate over dataset: ')
     batchSize = readVal(1, 'Batch size: ')
 
-
-    return fileName, convNum, epochs, batchSize
-
+    return epochs, batchSize
 
 # 4 bytes per integer in data files, 1 byte per pixel and per label
 bytesInt = 4
@@ -42,7 +47,7 @@ def readImages(fileName):
         rows = int.from_bytes(f.read(bytesInt), byteorder='big') # number of rows
         cols = int.from_bytes(f.read(bytesInt), byteorder='big') # number of columns
 
-        print("Images in file: {}\nDimensions: {}x{}\n".format(imgNum, rows, cols), end='')
+        # print("Images in file: {}\nDimensions: {}x{}\n".format(imgNum, rows, cols), end='')
 
         # read all pixels at once
         images = np.fromfile(f,np.uint8)

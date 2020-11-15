@@ -8,13 +8,14 @@ from keras.utils import normalize
 from sklearn.model_selection import train_test_split
 from collections import deque
 
-from utils import plotLoss, nextAction, nextLayer, addLayer, saveInfo, plotAll
-from input import readImages,readArgs
+from utils import plotLoss, nextAction, nextLayer,\
+    addLayer, saveInfo, plotAll, getConvLayersHndl
+from input import readImages,getNNParams,getImgFileName,getTrainParams
 
 # gpu fix
-# physical_devices = tf.config.experimental.list_physical_devices('GPU')
-# assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
-# config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
+physical_devices = tf.config.experimental.list_physical_devices('GPU')
+assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
+config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 
 def encoder(input, convLayers): # input is of size 28 x 28 x 1, i.e. gray scale
@@ -66,25 +67,41 @@ if __name__ == '__main__':
     # epochs
     # training loss & validation loss
 
+    fileName = getImgFileName()
+
+    # read file with instances
+    images, _, rows, cols = readImages(fileName)
+
+    # scaling
+    images /= 255.0
+
     while True:
-        fileName, convNum, epochs, batchSize = readArgs()
+        epochs, batchSize = getTrainParams()
 
-        # read file with instances
-        images, _, rows, cols = readImages(fileName)
+        if input('Do you want to load a pre-trained model [y|*]: ') == 'y': # load pre-trained model
+            model_path = input('Enter path of saved model: ')
+            autoencoder = models.load_model(model_path)
 
-        # scaling
-        images = normalize(images, axis= 1)
+            # get number of convolutional layers from loaded model
+            lookupFn, convNum = getConvLayersHndl()
+            autoencoder.summary(print_fn=lookupFn)
+            convNum = (convNum[0] - 1) // 2 # sub 1 for output layer and divide by 2 because of decoder 'mirrored' layers
+        else: # create new architecture
+            # ask user for hyperparameters, i.e. architecture structure
+            convNum = getNNParams()
 
-        # 28 x 28 x 1 array per image, i.e. one channel for gray scale
-        input_img = keras.Input(shape=(rows, cols, 1))
+            # 28 x 28 x 1 array per image, i.e. one channel for gray scale
+            input_img = keras.Input(shape=(rows, cols, 1))
 
-        # define structure of neural net
-        NN, encdr_layers = encoder(input_img, convNum)
-        NN = decoder(NN, encdr_layers)
+            # define structure of neural net
+            NN, encdr_layers = encoder(input_img, convNum)
+            NN = decoder(NN, encdr_layers)
 
-        # build model
-        autoencoder = Model(input_img, NN, name='N1')
-        autoencoder.compile(loss='mean_squared_error', optimizer=RMSprop())
+            # build model
+            autoencoder = Model(input_img, NN, name='N1')
+            autoencoder.compile(loss='mean_squared_error', optimizer=RMSprop())
+
+
         print('\n\n~~~ Convolutional Neural Network Architecture ~~~\n')
         autoencoder.summary()
 
@@ -108,9 +125,9 @@ if __name__ == '__main__':
                 plotLoss(errors.history)
             elif doNext == 3: # plot hyperparams
                 plotAll(save)
-            elif doNext == 4: # save weights of autoencoder
-                autoencoder.save_weights(input('Enter path: '))
-            elif doNext == 5: # save model and losses for research purposes
+            elif doNext == 4: # save autoencoder model
+                models.save_model(autoencoder, input('Enter path: '))
+            elif doNext == 5: # save model and losses for research purposes (check notebooks)
                 models.save_model(autoencoder,input('Enter model path: '))
                 np.save(input('Enter training history path: '),errors.history)
 

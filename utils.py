@@ -10,7 +10,6 @@ import seaborn as sns
 # fancy graphics
 plt.style.use('seaborn')
 plt.tight_layout()
-# plt.xkcd()
 
 # ask user for next layer type and layer parameters
 def nextLayer(convLayers, poolingLayers, forbidPool):
@@ -70,7 +69,7 @@ Enter one of 1, 2, 3, 4, 5, 6:
 \t1) repeat process
 \t2) plot training and validation loss over epochs
 \t3) plot hyperparameters over losses until now
-\t4) save autoencoder weights
+\t4) save model
 \t5) save model and losses
 \t6) exit
 """
@@ -105,7 +104,7 @@ def plotAll(saves):
         val_l.append(save['val_l'])
 
 
-    fig, axes = plt.subplots(1, 2, figsize=(15, 5), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(15, 5))
     fig.suptitle('Training and Validation loss(MSE) over hyperparameters')
 
     df=pd.DataFrame({'Convolution layers': convNums, 'Epochs': epochs, 'tr_l': train_l, 'val_l': val_l })
@@ -113,12 +112,23 @@ def plotAll(saves):
     df_tr=df.pivot_table( index='Convolution layers', columns='Epochs', values='tr_l' )
     df_val = df.pivot_table( index='Convolution layers', columns='Epochs', values='val_l' )
 
-    sns.heatmap(df_tr, ax=axes[0])
+    sns.heatmap(df_tr, ax=axes[0], annot=True)
     axes[0].set_title('Training Loss')
 
-    sns.heatmap(df_val, ax=axes[1])
+    sns.heatmap(df_val, ax=axes[1], annot=True)
     axes[1].set_title('Validation Loss')
 
     plt.show()
 
+'''
+in case model is pre-trained, helper method for finding number
+of convolutional layers in neural network
+'''
+def getConvLayersHndl():
+    convNum = [0] # use wrapper list
 
+    def lookup_summary(line):
+        if 'Conv2D' in line:
+            convNum[0] += 1
+
+    return lookup_summary, convNum
