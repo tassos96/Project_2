@@ -119,15 +119,13 @@ def actionToBool(dropoutAction):
 load weights of encoder from pre-trained autoencoder(first task)
 and make them non trainable
 '''
-def get_setUntrainable(classifier, autoencoder, encLayers, withDropout):
+def get_setUntrainable(classifier, autoencoder, encLayers):
     counter = 0
     for i in range(encLayers):
-        if not withDropout:
-            class_idx = i
-        else: # dropout layers added
-            class_idx = i + counter # skip dropout layers
-            if 'conv2d' in classifier.layers[class_idx].name:
-                counter += 1
+        class_idx = i + counter
+        if 'dropout' in classifier.layers[class_idx].name: # skip dropout layer
+            class_idx += 1
+            counter += 1
 
         # get trained weights from autoencoder
         classifier.layers[class_idx].set_weights(autoencoder.layers[i].get_weights())
@@ -138,15 +136,13 @@ def get_setUntrainable(classifier, autoencoder, encLayers, withDropout):
 '''
 make weights of encoder trainable
 '''
-def setTrainable(classifier, encLayers, withDropout):
+def setTrainable(classifier, encLayers):
     counter = 0
     for i in range(encLayers):
-        if not withDropout:
-            class_idx = i
-        else: # dropout layers added
-            class_idx = i + counter # skip dropout layers
-            if 'conv2d' in classifier.layers[class_idx].name:
-                counter += 1
+        class_idx = i + counter
+        if 'dropout' in classifier.layers[class_idx].name: # skip dropout layer
+            class_idx += 1
+            counter += 1
 
         # train the weights in second training phase
         classifier.layers[class_idx].trainable = True

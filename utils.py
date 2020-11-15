@@ -70,7 +70,7 @@ Enter one of 1, 2, 3, 4, 5, 6:
 \t2) plot training and validation loss over epochs
 \t3) plot hyperparameters over losses until now
 \t4) save model
-\t5) save model and losses
+\t5) save losses during training (for research)
 \t6) exit
 """
     action = input(prompt)

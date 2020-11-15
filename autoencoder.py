@@ -110,7 +110,7 @@ if __name__ == '__main__':
         train, val, train_grnd, val_grnd = train_test_split(images, images, test_size=0.2, random_state=42)
 
         # training, training error and validation error returned for plotting
-        errors = autoencoder.fit(train, train_grnd, batch_size=batchSize,
+        errors = autoencoder.fit(train, train_grnd, batch_size=batchSize,\
                                 epochs=epochs, validation_data=(val, val_grnd))
 
         # for plotting
@@ -126,10 +126,13 @@ if __name__ == '__main__':
             elif doNext == 3: # plot hyperparams
                 plotAll(save)
             elif doNext == 4: # save autoencoder model
+                # ask user if he wants to retrain on whole dataset, i.e. no validation set used
+                if input('Retrain without validation set? [y|*]: ') == 'y':
+                    autoencoder.fit(images, images, batch_size=batchSize,\
+                                epochs=epochs)
                 models.save_model(autoencoder, input('Enter path: '))
-            elif doNext == 5: # save model and losses for research purposes (check notebooks)
-                models.save_model(autoencoder,input('Enter model path: '))
-                np.save(input('Enter training history path: '),errors.history)
+            elif doNext == 5: # save losses for research purposes (check notebooks)
+                np.save(input('Enter path: '),errors.history)
 
         if doNext == 6: # exit
             break

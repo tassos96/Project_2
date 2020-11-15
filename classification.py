@@ -95,7 +95,7 @@ if __name__=='__main__':
         # build classification model
         classifier = Model(input_img, NN, name='N2')
         # get trained weights and don't train them
-        get_setUntrainable(classifier, autoencoder, encLayers, dropAftrConv)
+        get_setUntrainable(classifier, autoencoder, encLayers)
 
         classifier.compile(loss='categorical_crossentropy', optimizer=RMSprop())
 
