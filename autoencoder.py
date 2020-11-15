@@ -60,7 +60,7 @@ def decoder(NN, encdr_layers):
 
 
 if __name__ == '__main__':
-    save = [] # for every iteration keep hyperparameters and losses for plotting
+    save = [] # for every experiment keep hyperparameters and losses for plotting
     # 'save' list contains dicts with following attributes:
     # convolution layers
     # batch size
@@ -122,7 +122,7 @@ if __name__ == '__main__':
             if doNext == 1 or doNext == 6: # repeat experiment or exit
                 break
             elif doNext == 2: # plot losses
-                plotLoss(errors.history)
+                plotLoss(errors.history, loss_fn='Mean Squared Error')
             elif doNext == 3: # plot hyperparams
                 plotAll(save)
             elif doNext == 4: # save autoencoder model

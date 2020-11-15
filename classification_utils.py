@@ -1,5 +1,10 @@
 import sys
+import matplotlib.pyplot as plt
+import math
 
+# fancy graphics
+plt.style.use('seaborn')
+plt.tight_layout()
 
 class FilePaths:
 
@@ -150,14 +155,77 @@ def setTrainable(classifier, encLayers):
 
 def nextAction():
     prompt = """
-Enter one of 1, 2, 3, 4:
+Enter one of 1, 2, 3, 4, 5:
 \t1) repeat
-\t2) -
-\t3) -
-\t4) exit
+\t2) plot training and validation loss over epochs (current experiment)
+\t3) predict classes of images in test set
+\t4) plot training and validation loss over hyperparameters (all experiments)
+\t5) exit
 """
     action = input(prompt)
-    while action not in {'1','2','3','4'}:
+    while action not in {'1','2','3','4','5'}:
         action = input("Wrong input, enter again: ")
 
     return int(action)
+
+def concatErrorHistory(phaseOne, phaseTwo): # concatenate lists with losses from two training phases
+    toRet = {}
+
+    toRet['loss'] = phaseOne.history['loss'] + phaseTwo.history['loss']
+    toRet['val_loss'] = phaseOne.history['val_loss'] + phaseTwo.history['val_loss']
+
+    return toRet
+
+'''
+loss over epochs plot for all experiments
+'''
+def plotAll(experiments): # argument is list with hyperparams and train/val losses
+    fig, axes = plt.subplots(1,len(experiments), sharey=True)
+    axes = axes.ravel()
+
+    for i,ax in enumerate(axes):
+        ax.yaxis.set_tick_params(labelbottom=True)
+        x_axis = range(1,experiments[i]['ep']+1)
+        ax.plot(x_axis, experiments[i]['loss'], label='Training loss', c='orange')
+        ax.plot(x_axis, experiments[i]['val_loss'], label='Validation loss', linestyle='-.', c='brown', linewidth=2)
+        ax.axvline(experiments[i]['secPhase'], c='teal', linestyle='--', label='End of first training phase')
+        ax.set_xlabel('Epochs')
+        ax.set_ylabel('Cross Entropy')
+        ax.set_title(f'Epochs: {experiments[i]["ep"]}\nBatch Size: {experiments[i]["bSz"]}\nFully Conn Layer Nodes: {experiments[i]["fc"]}')
+
+
+    plt.legend()
+    plt.show()
+
+
+# save hyperparameters and losses for plotting
+def saveInfo(batchSize, fcNodes, epochs, train_loss, val_loss, phaseEnd, saveInto):
+    sv = \
+    {
+        'bSz': batchSize,
+        'fc': fcNodes,
+        'ep': epochs,
+        'loss': train_loss,
+        'val_loss': val_loss,
+        'secPhase': phaseEnd
+    }
+    saveInto.append(sv)
+
+
+# show images and their predicted values
+def showImgs(count, indexes, allImages, preds, labels):
+    subplt_dim = math.ceil(math.sqrt(count))
+
+    for i,idx in enumerate(indexes):
+        if i >= count:
+            break
+
+        plt.subplot(subplt_dim,subplt_dim,i+1)
+        plt.imshow(allImages[idx].reshape(28,28), cmap='gray', interpolation='none')
+        plt.grid(False)
+        plt.xticks([])
+        plt.yticks([])
+        plt.title(f'Predicted:{preds[idx]}, Label:{labels[idx]}')
+        plt.tight_layout()
+
+    plt.show()

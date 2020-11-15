@@ -52,13 +52,17 @@ def addLayer(layer_params, input): # layer_params is a dict with layer-specific 
     elif layer_params['type'] == "upsample":
         return UpSampling2D((2,2))(input) # get back to initial dimensions
 
-def plotLoss(losses):
+def plotLoss(losses, loss_fn, ep_first_phase=None):
     #Plotting the validation and training errors
-    x_axis = range(len(losses['loss']))
+    x_axis = range(1,len(losses['loss'])+1)
+
+    if ep_first_phase is not None:
+        plt.axvline(ep_first_phase, c='teal', linestyle='--', label='End of first training phase')
     plt.plot(x_axis, losses['loss'], label='Training loss', c='orange')
     plt.plot(x_axis, losses['val_loss'], label='Validation loss', linestyle='-.', c='brown', linewidth=2)
+
     plt.xlabel('Epochs')
-    plt.ylabel('Mean Squared Error')
+    plt.ylabel(loss_fn)
     plt.title('Training and validation loss')
     plt.legend()
     plt.show()
@@ -108,14 +112,17 @@ def plotAll(saves):
     fig.suptitle('Training and Validation loss(MSE) over hyperparameters')
 
     df=pd.DataFrame({'Convolution layers': convNums, 'Epochs': epochs, 'tr_l': train_l, 'val_l': val_l })
+    # bounds of colorbar
+    vmin = min(df['tr_l'].min(),df['val_l'].min())
+    vmax = max(df['tr_l'].max(),df['val_l'].max())
 
     df_tr=df.pivot_table( index='Convolution layers', columns='Epochs', values='tr_l' )
     df_val = df.pivot_table( index='Convolution layers', columns='Epochs', values='val_l' )
 
-    sns.heatmap(df_tr, ax=axes[0], annot=True)
+    sns.heatmap(df_tr, vmin=vmin, vmax=vmax, ax=axes[0], annot=True, center=0)
     axes[0].set_title('Training Loss')
 
-    sns.heatmap(df_val, ax=axes[1], annot=True)
+    sns.heatmap(df_val, vmin=vmin, vmax=vmax, ax=axes[1], annot=True, center=0)
     axes[1].set_title('Validation Loss')
 
     plt.show()
