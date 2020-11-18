@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from input import readVal
+from pylab import *
+from mpl_toolkits.mplot3d import Axes3D
 
 import seaborn as sns
 
@@ -97,8 +99,6 @@ def saveInfo(convLayersNum, batchSize, epochs, train_loss, val_loss, saveInto):
     saveInto.append(sv)
 
 def plotAll(saves):
-    idx = np.arange(len(saves))
-
     convNums, batchSizes, epochs, train_l, val_l = [],[],[],[],[]
     for save in saves:
         convNums.append(save['cnv'])
@@ -107,23 +107,21 @@ def plotAll(saves):
         train_l.append(save['tr_l'])
         val_l.append(save['val_l'])
 
+    # make two 3d heatmaps, one for training loss and one for validation loss
+    fig = plt.figure(figsize=(24,18))
+    for i,loss in enumerate((train_l,val_l)):
+        ax = fig.add_subplot(121+i, projection='3d')
 
-    fig, axes = plt.subplots(1, 2, figsize=(15, 5))
-    fig.suptitle('Training and Validation loss(MSE) over hyperparameters')
+        colmap = cm.ScalarMappable(cmap=cm.YlOrRd)
+        colmap.set_array(train_l)
 
-    df=pd.DataFrame({'Convolution layers': convNums, 'Epochs': epochs, 'tr_l': train_l, 'val_l': val_l })
-    # bounds of colorbar
-    vmin = min(df['tr_l'].min(),df['val_l'].min())
-    vmax = max(df['tr_l'].max(),df['val_l'].max())
-
-    df_tr=df.pivot_table( index='Convolution layers', columns='Epochs', values='tr_l' )
-    df_val = df.pivot_table( index='Convolution layers', columns='Epochs', values='val_l' )
-
-    sns.heatmap(df_tr, vmin=vmin, vmax=vmax, ax=axes[0], annot=True, center=0)
-    axes[0].set_title('Training Loss')
-
-    sns.heatmap(df_val, vmin=vmin, vmax=vmax, ax=axes[1], annot=True, center=0)
-    axes[1].set_title('Validation Loss')
+        ax.scatter(convNums,batchSizes,epochs,marker='s',s=140,c=loss,cmap='YlOrRd')
+        fig.colorbar(colmap)
+        ax.set_xlabel('Convolution layers')
+        ax.set_ylabel('Batch Size')
+        ax.set_zlabel('Epochs')
+        ax.grid(True)
+        ax.set_title('Training Loss') if i == 0 else ax.set_title('Validation Loss')
 
     plt.show()
 

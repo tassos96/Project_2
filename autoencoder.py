@@ -73,7 +73,7 @@ if __name__ == '__main__':
     images, _, rows, cols = readImages(fileName)
 
     # scaling
-    images /= 255.0
+    images = normalize(images)
 
     while True:
         epochs, batchSize = getTrainParams()

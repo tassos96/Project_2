@@ -66,8 +66,8 @@ if __name__=='__main__':
     assert tst_lbl_n == tst_img_n, 'Number of labels doesn\'t match number of images in test set'
 
     # scaling i.e. normalization
-    train /= 255.0
-    test /= 255.0
+    test = normalize(test)
+    train = normalize(train)
 
     # split categorical attribute into 10 binary attributes, i.e. one-hot encoding
     train_y = to_categorical(train_y)

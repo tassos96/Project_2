@@ -183,15 +183,15 @@ def plotAll(experiments): # argument is list with hyperparams and train/val loss
     fig, axes = plt.subplots(1,len(experiments), sharey=True)
     axes = axes.ravel()
 
-    for i,ax in enumerate(axes):
+    for ax,exp in zip(axes,experiments):
         ax.yaxis.set_tick_params(labelbottom=True)
-        x_axis = range(1,experiments[i]['ep']+1)
-        ax.plot(x_axis, experiments[i]['loss'], label='Training loss', c='orange')
-        ax.plot(x_axis, experiments[i]['val_loss'], label='Validation loss', linestyle='-.', c='brown', linewidth=2)
-        ax.axvline(experiments[i]['secPhase'], c='teal', linestyle='--', label='End of first training phase')
+        x_axis = range(1,exp['ep']+1)
+        ax.plot(x_axis, exp['loss'], label='Training loss', c='orange')
+        ax.plot(x_axis, exp['val_loss'], label='Validation loss', linestyle='-.', c='brown', linewidth=2)
+        ax.axvline(exp['secPhase'], c='teal', linestyle='--', label='End of first training phase')
         ax.set_xlabel('Epochs')
         ax.set_ylabel('Cross Entropy')
-        ax.set_title(f'Epochs: {experiments[i]["ep"]}\nBatch Size: {experiments[i]["bSz"]}\nFully Conn Layer Nodes: {experiments[i]["fc"]}')
+        ax.set_title(f'Epochs: {exp["ep"]}\nBatch Size: {exp["bSz"]}\nFully Conn Layer Nodes: {exp["fc"]}')
 
 
     plt.legend()
