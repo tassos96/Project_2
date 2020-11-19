@@ -229,3 +229,9 @@ def showImgs(count, indexes, allImages, preds, labels):
         plt.tight_layout()
 
     plt.show()
+
+
+
+
+
+
