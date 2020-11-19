@@ -13,9 +13,9 @@ from utils import plotLoss, nextAction, nextLayer,\
 from input import readImages,getNNParams,getImgFileName,getTrainParams
 
 # gpu fix
-physical_devices = tf.config.experimental.list_physical_devices('GPU')
-assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
-config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
+# physical_devices = tf.config.experimental.list_physical_devices('GPU')
+# assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
+# config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 
 def encoder(input, convLayers): # input is of size 28 x 28 x 1, i.e. gray scale
