@@ -81,7 +81,7 @@ Enter one of 1, 2, 3, 4:
 \t1) no dropout layers
 \t2) dropout layers after convolution layers
 \t3) dropout layer after fully connected layer
-\t4) both 2 and 3
+\t4) both 2 and 3 (RECOMMENDED)
 """
     action = input(prompt)
     while action not in {'1','2','3','4'}:

@@ -83,11 +83,11 @@ if __name__=='__main__':
         dropAftrConv, dropAftrFC = actionToBool(dropAction)
         probConv, probFC = None, None
         if dropAftrConv:
-            probConv = readProb('Dropout after Convolution layer probability: ')
+            probConv = readProb('Dropout after Convolution layer probability(RECOMMENDED 0.2): ')
         if dropAftrFC:
-            probFC = readProb('Dropout after Fully connected layer probability: ')
+            probFC = readProb('Dropout after Fully connected layer probability(RECOMMENDED 0.5): ')
 
-        print(f'Prob Drop Conv: {probConv} \nProb Drop FC: {probFC}')
+        #print(f'Prob Drop Conv: {probConv} \nProb Drop FC: {probFC}')
 
         # 28 x 28 x 1 array per image, i.e. one channel for gray scale
         input_img = keras.Input(shape=(rows, cols, 1))

@@ -8,8 +8,7 @@ from keras.utils import normalize
 from sklearn.model_selection import train_test_split
 from collections import deque
 
-from utils import plotLoss, nextAction, nextLayer,\
-    addLayer, saveInfo, plotAll, getConvLayersHndl
+from utils import *
 from input import readImages,getNNParams,getImgFileName,getTrainParams
 
 # gpu fix
