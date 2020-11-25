@@ -7,15 +7,16 @@ from keras.optimizers import Adam, RMSprop
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 import numpy as np
+import json
 
 from classification_utils import *
 from input import getTrainParams, readVal, readImages, readLabels
 from utils import plotLoss
 
 # gpu fix
-# physical_devices = tf.config.experimental.list_physical_devices('GPU')
-# assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
-# config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
+physical_devices = tf.config.experimental.list_physical_devices('GPU')
+assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
+config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 # process the model created from first part and get the encoding part only
 def encoder(autoencoder, input, dropAftrConv=False, dropProb=None):
@@ -76,68 +77,79 @@ if __name__=='__main__':
     autoencoder = models.load_model(paths.autoenc_model_fname, compile=False)
 
     while True:
-        fullCnNodes = readVal(1, 'Number of nodes in fully connected layer: ')
+        if input('Do you want to load a pre-trained model [y|*]: ') == 'y': # load pre-trained model
+            model_path = input('Enter path of saved model: ')
+            classifier = models.load_model(model_path)
+            json_f = input('Enter path of json file with training info: ')
+            with open(json_f, 'r') as fl:
+                info = json.load(fl)
+            save.append(info)
+            errors = {'loss':info['loss'], 'val_loss':info['val_loss']}
+            epochsPhase1 = info['secPhase']
+            classifier.summary()
+        else:
+            fullCnNodes = readVal(1, 'Number of nodes in fully connected layer: ')
 
-        # dropout info
-        dropAction = askDropout()
-        dropAftrConv, dropAftrFC = actionToBool(dropAction)
-        probConv, probFC = None, None
-        if dropAftrConv:
-            probConv = readProb('Dropout after Convolution layer probability(RECOMMENDED 0.2): ')
-        if dropAftrFC:
-            probFC = readProb('Dropout after Fully connected layer probability(RECOMMENDED 0.5): ')
+            # dropout info
+            dropAction = askDropout()
+            dropAftrConv, dropAftrFC = actionToBool(dropAction)
+            probConv, probFC = None, None
+            if dropAftrConv:
+                probConv = readProb('Dropout after Convolution layer probability(RECOMMENDED 0.2): ')
+            if dropAftrFC:
+                probFC = readProb('Dropout after Fully connected layer probability(RECOMMENDED 0.5): ')
 
-        #print(f'Prob Drop Conv: {probConv} \nProb Drop FC: {probFC}')
+            #print(f'Prob Drop Conv: {probConv} \nProb Drop FC: {probFC}')
 
-        # 28 x 28 x 1 array per image, i.e. one channel for gray scale
-        input_img = keras.Input(shape=(rows, cols, 1))
+            # 28 x 28 x 1 array per image, i.e. one channel for gray scale
+            input_img = keras.Input(shape=(rows, cols, 1))
 
-        # process encoder part of autoencoder
-        NN, encLayers = encoder(autoencoder, input_img, dropAftrConv, probConv)
-        # add fully connected layer
-        NN = fullyConnected(NN, fullCnNodes, dropAftrFC, probFC)
+            # process encoder part of autoencoder
+            NN, encLayers = encoder(autoencoder, input_img, dropAftrConv, probConv)
+            # add fully connected layer
+            NN = fullyConnected(NN, fullCnNodes, dropAftrFC, probFC)
 
-        # set weights of encoder to not be trained for the first step
+            # set weights of encoder to not be trained for the first step
 
-        # build classification model
-        classifier = Model(input_img, NN, name='N2')
-        # get trained weights and don't train them
-        get_setUntrainable(classifier, autoencoder, encLayers)
+            # build classification model
+            classifier = Model(input_img, NN, name='N2')
+            # get trained weights and don't train them
+            get_setUntrainable(classifier, autoencoder, encLayers)
 
-        classifier.compile(loss='categorical_crossentropy', optimizer=Adam())
+            classifier.compile(loss='categorical_crossentropy', optimizer=Adam())
 
-        classifier.summary()
+            classifier.summary()
 
-        # split into train set and validation set
-        train_curr, val, train_curr_y, val_y = train_test_split(train, train_y, test_size=0.2, random_state=42)
+            # split into train set and validation set
+            train_curr, val, train_curr_y, val_y = train_test_split(train, train_y, test_size=0.2, random_state=42)
 
-        print('Training weights of fully connected layer...')
-        # get hyperparameters about training process from user
-        epochsPhase1, batchSize = getTrainParams()
-        # train only the fully connected layer
-        metricsPhase1= classifier.fit(train_curr, train_curr_y, batch_size=batchSize,\
-                                epochs=epochsPhase1, validation_data=(val,val_y))
+            print('Training weights of fully connected layer...')
+            # get hyperparameters about training process from user
+            epochsPhase1, batchSize = getTrainParams()
+            # train only the fully connected layer
+            metricsPhase1= classifier.fit(train_curr, train_curr_y, batch_size=batchSize,\
+                                    epochs=epochsPhase1, validation_data=(val,val_y))
 
-        print('Training weights of all layers...')
-        epochsPhase2 = readVal(1, 'Epochs: ')
-        # make encoder's weights trainable
-        setTrainable(classifier, encLayers)
-        # warm start
-        classifier.compile(loss='categorical_crossentropy', optimizer=Adam())
-        # retrain all the weights
-        metricsPhase2= classifier.fit(train_curr, train_curr_y, batch_size=batchSize,\
-                                epochs=epochsPhase2, validation_data=(val,val_y))
+            print('Training weights of all layers...')
+            epochsPhase2 = readVal(1, 'Epochs: ')
+            # make encoder's weights trainable
+            setTrainable(classifier, encLayers)
+            # warm start
+            classifier.compile(loss='categorical_crossentropy', optimizer=Adam())
+            # retrain all the weights
+            metricsPhase2= classifier.fit(train_curr, train_curr_y, batch_size=batchSize,\
+                                    epochs=epochsPhase2, validation_data=(val,val_y))
 
-        errors = concatErrorHistory(metricsPhase1,metricsPhase2)
+            errors = concatErrorHistory(metricsPhase1,metricsPhase2)
 
-        # for plotting
-        saveInfo(batchSize, fullCnNodes, epochsPhase1+epochsPhase2, errors['loss'], errors['val_loss'], epochsPhase1, save)
+            # for plotting
+            saveInfo(batchSize, fullCnNodes, epochsPhase1+epochsPhase2, errors['loss'], errors['val_loss'], epochsPhase1, save)
 
         while True:
             # ask user for the next action
             doNext = nextAction()
 
-            if doNext == 1 or doNext == 5:
+            if doNext == 1 or doNext == 7:
                 break
             elif doNext == 2: # plot losses
                 plotLoss(errors, loss_fn='Cross Entropy', ep_first_phase=epochsPhase1)
@@ -164,8 +176,15 @@ if __name__=='__main__':
                     print('Not enough experiments done, use option 2 instead.')
                     continue
                 plotAll(save)
+            elif doNext == 5: # save classifier model
+                models.save_model(classifier, input('Enter path: '))
+                json_f = input('Enter path of json file with training info: ')
+                with open(json_f, 'w') as fl:
+                    json.dump(save[-1], fl)
+            elif doNext == 6: # save losses for research purposes (check notebooks)
+                np.save(input('Enter path: '),errors)
 
-        if doNext == 5: # exit
+        if doNext == 7: # exit
             break
 
 

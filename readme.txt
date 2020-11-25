@@ -40,6 +40,10 @@ Usage:
 
         Όπως ζητείται από την εκφώνηση, η εκπαίδευση του classifier γίνεται σε δύο στάδια. Αρχικά εκπαιδεύονται μόνο τα weights του fully connected layer.
         Στο δεύτερο στάδιο εκπαιδεύεται το μοντέλο συνολικά.
+	
+	ΣΗΜΕΙΩΣΗ: Και στον classifier υπάρχει δυνατότητα φόρτωσης προκατασκευασμένου και προεκπαιδευμένου μοντέλου. Περαιτέρω training δεν πραγματοποιείται. Επιπρόσθετα για λόγους έρευνας, εκτός από τις ζητούμενες ενέργειες, κατα την ολοκλήρωση της εκπαίδευσης
+            υπάρχει η δυνατότητα πέρα από την αποθήκευση ολόκληρου του μοντέλου και η αποθήκευση των training και validation losses που υπολογίστηκαν σε κάθε
+            epoch της εκπαίδευσης.
 
 Ο πηγαίος κώδικας έχει οργανωθεί με τον παρακάτω τρόπο:
     ./
@@ -53,13 +57,25 @@ Usage:
     |
     ├── utils.py                // Γενικά utilities
     |
-    ├── Research_N1.ipynb       // Jupyter Notebook, σύγκριση διάφορων autoencoder μοντέλων
+    ├── Research_N1.ipynb       // Jupyter Notebook, σύγκριση διάφορων autoencoding μοντέλων
     |
-    └── pretrained_models       // Φάκελος που περιέχει pretrained autoencoding models
-        ├── best.h5
-        ├── best_loss.npy
-        ├── big_batch.h5
-        ├── big_batch_loss.npy
-        ├── complex.h5
-        └── complex_loss.npy
+    ├── Research_N2.ipynb       // Jupyter Notebook, σύγκριση διάφορων classificication μοντέλων
+    |
+    ├── autoencoder_models      // Φάκελος που περιέχει pretrained autoencoding models
+    |   ├── best.h5
+    |   ├── best_loss.npy
+    |   ├── big_batch.h5
+    |   ├── big_batch_loss.npy
+    |   ├── complex.h5
+    |   └── complex_loss.npy
+    |
+    └──classifier_models/       // Φάκελος που περιέχει pretrained classification models
+	├── fc128.h5
+	├── fc128.json
+	├── fc256.h5
+	├── fc256.json
+	├── fc32.h5
+	├── fc32.json
+	├── fc64.h5
+	└── fc64.json
 

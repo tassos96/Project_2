@@ -160,10 +160,12 @@ Enter one of 1, 2, 3, 4, 5:
 \t2) plot training and validation loss over epochs (current experiment)
 \t3) predict classes of images in test set
 \t4) plot training and validation loss over hyperparameters (all experiments)
-\t5) exit
+\t5) save model
+\t6) save losses during training (for research)
+\t7) exit
 """
     action = input(prompt)
-    while action not in {'1','2','3','4','5'}:
+    while action not in {'1','2','3','4','5','6','7'}:
         action = input("Wrong input, enter again: ")
 
     return int(action)
